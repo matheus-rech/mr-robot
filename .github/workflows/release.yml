@@ -117,7 +117,7 @@ jobs:
         - HTTP health check endpoint
 
         ### System Requirements
-        - Node.js 18.x or higher
+        - Node.js 20.x or higher
         - Linux, macOS, or Windows
         - ARM64 support (Raspberry Pi compatible)
 
