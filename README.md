@@ -223,7 +223,7 @@ Agent: "Here are the top results I found..."
 - `TOOL:run_skill:<name>:<args>` — Execute saved skill with arguments
 - `TOOL:list_skills` — Show all available skills
 - `TOOL:set_preference:<key>=<value>` — Store user preference
-- `TOOL:schedule:<json>` — Schedule recurring task: `{"name":"...","cron":"...","action":"..."}`
+- `TOOL:schedule:<json>` — Persist a recurring task definition: `{"name":"...","cron":"...","action":"..."}`. Note: with the current implementation, newly added scheduled tasks are loaded by the scheduler on application startup, so they become active after a restart rather than immediately.
 
 ### Session Management
 
