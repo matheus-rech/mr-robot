@@ -32,7 +32,12 @@ export class Scheduler {
 
     const memory = this.agent.memory;
     if (memory) {
-      const tasks = await memory.getScheduledTasks();
+      let tasks: Array<{ id: string; name: string; cron: string; action: string; enabled: number }> = [];
+      try {
+        tasks = await memory.getScheduledTasks();
+      } catch (err: any) {
+        console.error(chalk.red('[Scheduler] Failed to load persisted tasks, continuing without them:'), err.message);
+      }
       for (const task of tasks) {
         this.schedule(task.id, task.cron, async () => {
           try {

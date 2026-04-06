@@ -11,11 +11,12 @@ export interface Skill {
 export class SkillsManager {
   private memory: Memory;
   private loadedSkills: Map<string, Skill> = new Map();
+  /** Resolves once persisted skills have been loaded from DB. */
+  readonly ready: Promise<void>;
 
   constructor(memory: Memory) {
     this.memory = memory;
-    // Load skills asynchronously - they'll be available shortly after construction
-    this.loadPersistedSkills().catch(err => {
+    this.ready = this.loadPersistedSkills().catch(err => {
       console.error('Failed to load persisted skills:', err);
     });
   }
@@ -31,7 +32,7 @@ export class SkillsManager {
     // Enhanced validation with word boundaries to prevent bypasses
     const dangerousPatterns = [
       { pattern: /\brequire\s*\(/i, reason: 'require() is not allowed' },
-      { pattern: /\bimport\s+/i, reason: 'import statements are not allowed' },
+      { pattern: /\b(import\s+|import\s*\()/i, reason: 'import statements are not allowed' },
       { pattern: /\bprocess\b/i, reason: 'process access is not allowed' },
       { pattern: /child_process/i, reason: 'child_process access is not allowed' },
       { pattern: /\bfs\b/i, reason: 'filesystem access is not allowed' },
@@ -40,6 +41,7 @@ export class SkillsManager {
       { pattern: /\.constructor\s*\(/i, reason: 'constructor access is not allowed' },
       { pattern: /\b__dirname\b|\b__filename\b/i, reason: 'directory access is not allowed' },
       { pattern: /\bglobal\b/i, reason: 'global object access is not allowed' },
+      { pattern: /\bglobalThis\b/i, reason: 'globalThis access is not allowed' },
       { pattern: /\bmodule\b/i, reason: 'module access is not allowed' },
       { pattern: /\bexports\b/i, reason: 'exports access is not allowed' },
     ];
@@ -101,18 +103,25 @@ export class SkillsManager {
         description,
         execute: async (args: string) => {
           try {
-            // Add timeout to prevent infinite loops
+            // Add timeout to prevent infinite loops (vm timeout is wall-clock for CPU-bound code)
             const timeoutMs = 30000; // 30 seconds
+            let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
             const timeoutPromise = new Promise<string>((_, reject) => {
-              setTimeout(() => reject(new Error('Skill execution timeout')), timeoutMs);
+              timeoutHandle = setTimeout(() => reject(new Error('Skill execution timeout')), timeoutMs);
             });
+            // unref so the timer doesn't keep the process alive unnecessarily
+            timeoutHandle?.unref?.();
 
-            // Execute in sandboxed context
+            // Execute in sandboxed context; timeout option enforces CPU-bound limit too
             const context = vm.createContext({ ...sandbox, args });
-            const executionPromise = script.runInContext(context, { timeout: timeoutMs });
+            const executionPromise = script.runInContext(context, { timeout: timeoutMs }) as Promise<string>;
 
-            const result = await Promise.race([executionPromise, timeoutPromise]);
-            return String(result);
+            try {
+              const result = await Promise.race([executionPromise, timeoutPromise]);
+              return String(result);
+            } finally {
+              clearTimeout(timeoutHandle);
+            }
           } catch (err: any) {
             return `Skill error: ${err.message}`;
           }

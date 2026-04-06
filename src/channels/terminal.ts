@@ -69,7 +69,7 @@ export class TerminalChannel implements BaseChannel {
         }
 
         if (message === '/prefs') {
-          const prefs = this.agent.memory.getAllPreferences();
+          const prefs = await this.agent.memory.getAllPreferences();
           if (prefs.length === 0) {
             console.log(chalk.gray('\nNo preferences saved yet.\n'));
           } else {

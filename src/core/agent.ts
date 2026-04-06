@@ -32,6 +32,7 @@ export class Agent {
     }
 
     this.skillsManager = new SkillsManager(this.memory);
+    await this.skillsManager.ready;
 
     const tools: Tool[] = [
       new WebSearchTool(),
