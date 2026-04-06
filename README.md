@@ -185,7 +185,7 @@ src/
 
 **Skills Manager (`src/core/skills.ts`)** — Runtime code execution system:
 - Compiles user-provided JavaScript code into executable functions
-- Loads persisted skills from database on startup
+- Loads persisted skills from the database on startup
 - Sandboxed execution with error handling
 - Skills can accept arguments and return results asynchronously
 
