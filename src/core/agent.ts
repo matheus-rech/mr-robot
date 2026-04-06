@@ -32,6 +32,7 @@ export class Agent {
     }
 
     this.skillsManager = new SkillsManager(this.memory);
+    await this.skillsManager.ready;
 
     const tools: Tool[] = [
       new WebSearchTool(),
@@ -63,7 +64,7 @@ export class Agent {
   }
 
   async chat(userMessage: string, channel: string, sessionId: string): Promise<string> {
-    this.memory.addMessage({
+    await this.memory.addMessage({
       role: 'user',
       content: userMessage,
       channel,
@@ -71,8 +72,8 @@ export class Agent {
       sessionId,
     });
 
-    const history = this.memory.getConversationHistory(sessionId, 30);
-    const systemPrompt = this.buildSystemPrompt();
+    const history = await this.memory.getConversationHistory(sessionId, 30);
+    const systemPrompt = await this.buildSystemPrompt();
 
     const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [
       { role: 'system', content: systemPrompt },
@@ -84,7 +85,7 @@ export class Agent {
 
     const response = await this.processWithTools(messages, userMessage, channel, sessionId);
 
-    this.memory.addMessage({
+    await this.memory.addMessage({
       role: 'assistant',
       content: response,
       channel,
@@ -97,9 +98,9 @@ export class Agent {
     return response;
   }
 
-  private buildSystemPrompt(): string {
+  private async buildSystemPrompt(): Promise<string> {
     const name = this.agentName;
-    const prefs = this.memory.getAllPreferences();
+    const prefs = await this.memory.getAllPreferences();
     const skills = this.skillsManager.listSkills();
     const prefsText = prefs.length > 0
       ? '\nUser preferences:\n' + prefs.map(p => `- ${p.key}: ${p.value}`).join('\n')
@@ -156,7 +157,7 @@ When the user shows you a complex task, offer to create a skill for it so you ca
           if (tool) toolResult = await tool.execute(toolArgs);
         } else if (toolName === 'create_skill') {
           const skillData = JSON.parse(toolArgs);
-          const ok = this.skillsManager.createSkill(skillData.name, skillData.description, skillData.code);
+          const ok = await this.skillsManager.createSkill(skillData.name, skillData.description, skillData.code);
           toolResult = ok ? `Skill "${skillData.name}" created successfully!` : `Failed to create skill.`;
         } else if (toolName === 'run_skill') {
           const colonIdx = toolArgs.indexOf(':');
@@ -169,13 +170,13 @@ When the user shows you a complex task, offer to create a skill for it so you ca
           if (eqIdx >= 0) {
             const key = toolArgs.slice(0, eqIdx).trim();
             const value = toolArgs.slice(eqIdx + 1).trim();
-            this.memory.setPreference(key, value);
+            await this.memory.setPreference(key, value);
             toolResult = `Preference "${key}" saved.`;
           }
         } else if (toolName === 'schedule') {
           const schedData = JSON.parse(toolArgs);
           const id = uuidv4();
-          this.memory.addScheduledTask(id, schedData.name, schedData.cron, schedData.action);
+          await this.memory.addScheduledTask(id, schedData.name, schedData.cron, schedData.action);
           toolResult = `Scheduled task "${schedData.name}" created.`;
         }
       } catch (err: any) {
@@ -202,7 +203,7 @@ When the user shows you a complex task, offer to create a skill for it so you ca
     for (const pattern of prefPatterns) {
       const match = userMessage.match(pattern.regex);
       if (match) {
-        this.memory.setPreference(pattern.key, match[1]);
+        await this.memory.setPreference(pattern.key, match[1]);
       }
     }
   }
