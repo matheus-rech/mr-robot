@@ -198,7 +198,7 @@ When the user shows you a complex task, offer to create a skill for it so you ca
     for (const pattern of prefPatterns) {
       const match = userMessage.match(pattern.regex);
       if (match) {
-        this.memory.setPreference(`${pattern.key}_${Date.now()}`, match[1]);
+        this.memory.setPreference(pattern.key, match[1]);
       }
     }
   }

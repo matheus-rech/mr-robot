@@ -106,6 +106,9 @@ export class TerminalChannel implements BaseChannel {
 
     prompt();
 
-    await new Promise(() => {});
+    await new Promise<void>((resolve) => {
+      process.once('SIGINT', resolve);
+      process.once('SIGTERM', resolve);
+    });
   }
 }

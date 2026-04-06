@@ -91,6 +91,9 @@ export class WhatsAppChannel implements BaseChannel {
     };
 
     await connectWA();
-    await new Promise(() => {});
+    await new Promise<void>((resolve) => {
+      process.once('SIGINT', resolve);
+      process.once('SIGTERM', resolve);
+    });
   }
 }
