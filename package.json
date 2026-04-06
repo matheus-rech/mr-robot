@@ -1,0 +1,45 @@
+{
+  "name": "mr-robot",
+  "version": "1.0.0",
+  "description": "Personal AI assistant that connects to all your messaging apps",
+  "main": "dist/index.js",
+  "bin": {
+    "mr-robot": "dist/index.js",
+    "mr-robot-setup": "dist/wizard.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "setup": "ts-node src/wizard.ts",
+    "dev:setup": "ts-node src/wizard.ts"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.17.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "^1.6.7",
+    "better-sqlite3": "^9.4.3",
+    "chalk": "^4.1.2",
+    "cheerio": "^1.0.0-rc.12",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "figlet": "^1.7.0",
+    "grammy": "^1.21.1",
+    "inquirer": "^8.2.6",
+    "node-cron": "^3.0.3",
+    "openai": "^4.28.0",
+    "ora": "^5.4.1",
+    "say": "^0.16.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/figlet": "^1.5.8",
+    "@types/inquirer": "^8.2.10",
+    "@types/node": "^20.11.5",
+    "@types/node-cron": "^3.0.11",
+    "@types/uuid": "^9.0.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
