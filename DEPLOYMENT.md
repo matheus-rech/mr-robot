@@ -59,7 +59,7 @@ Mr. Robot fully supports Raspberry Pi (ARM64). Use the same Docker or Linux inst
 - Raspberry Pi 3B+ or newer
 - 64-bit OS (Raspberry Pi OS 64-bit, Ubuntu Server 64-bit)
 - At least 1GB RAM available
-- Node.js 18+ (automatically installed by script)
+- Node.js 20+ (automatically installed by script)
 
 **Performance tip:** For Raspberry Pi, consider disabling terminal channel in production:
 ```bash

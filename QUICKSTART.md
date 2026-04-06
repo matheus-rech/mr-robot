@@ -65,7 +65,7 @@ sudo journalctl -u mr-robot -f   # View logs
 **Best for:** Development, testing, customization
 
 1. **Prerequisites**
-   - Node.js 18+ installed
+   - Node.js 20+ installed
    - npm or yarn
 
 2. **Install and setup**

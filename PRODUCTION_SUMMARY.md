@@ -9,7 +9,7 @@ All production deployment features have been successfully implemented for the Mr
 ### 1. **CI/CD Automation**
 - ✅ GitHub Actions workflow for continuous integration (`.github/workflows/ci.yml`)
 - ✅ Automated release workflow triggered by version tags (`.github/workflows/release.yml`)
-- ✅ Build validation across Node.js 18, 20, and 22
+- ✅ Build validation across Node.js 20 and 22
 - ✅ Automatic GitHub Releases with packaged assets
 
 ### 2. **Docker Support**
