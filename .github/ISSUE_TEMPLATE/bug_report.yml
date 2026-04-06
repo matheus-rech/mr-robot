@@ -1,0 +1,104 @@
+name: Bug Report
+description: Report a bug or issue with Mr. Robot
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us fix it.
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment Method
+      description: How are you running Mr. Robot?
+      options:
+        - Docker
+        - Systemd (Linux install script)
+        - From source (npm)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version are you running? (check with `docker image ls` or `git rev-parse --short HEAD`)
+      placeholder: "v1.0.0 or commit hash"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: What platform are you running on?
+      options:
+        - Linux (x86_64)
+        - Raspberry Pi (ARM64)
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of what went wrong
+      placeholder: "Mr. Robot failed to start when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Start Mr. Robot with...
+        2. Send message...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Relevant logs (docker-compose logs or journalctl -u mr-robot)
+        Please redact any sensitive information like API keys!
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: |
+        Relevant parts of your .env file (REDACT API KEYS!)
+        Example: LLM_PROVIDER=openai, ENABLED_CHANNELS=terminal,telegram
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have checked the [troubleshooting guide](../blob/main/DEPLOYMENT.md#troubleshooting)
+        - label: I have redacted sensitive information from logs and config
+        - label: I have searched for similar issues
