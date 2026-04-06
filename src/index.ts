@@ -38,7 +38,7 @@ async function main() {
   }
 
   const scheduler = new Scheduler(agent);
-  scheduler.init();
+  await scheduler.init();
 
   await Promise.all(channels.map(c => c.start()));
 }

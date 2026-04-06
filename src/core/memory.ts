@@ -57,70 +57,191 @@ export class Memory {
     `);
   }
 
-  addMessage(msg: Omit<Message, 'id'>): void {
-    this.db.prepare(
-      'INSERT INTO messages (role, content, channel, timestamp, session_id) VALUES (?, ?, ?, ?, ?)'
-    ).run(msg.role, msg.content, msg.channel, msg.timestamp, msg.sessionId);
+  // Async wrapper for adding message to avoid blocking
+  async addMessage(msg: Omit<Message, 'id'>): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          this.db.prepare(
+            'INSERT INTO messages (role, content, channel, timestamp, session_id) VALUES (?, ?, ?, ?, ?)'
+          ).run(msg.role, msg.content, msg.channel, msg.timestamp, msg.sessionId);
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getRecentMessages(limit = 20, channel?: string): Message[] {
-    if (channel) {
-      return this.db.prepare(
-        'SELECT * FROM messages WHERE channel = ? ORDER BY timestamp DESC LIMIT ?'
-      ).all(channel, limit) as Message[];
-    }
-    return this.db.prepare(
-      'SELECT * FROM messages ORDER BY timestamp DESC LIMIT ?'
-    ).all(limit) as Message[];
+  // Async wrapper for getting recent messages
+  async getRecentMessages(limit = 20, channel?: string): Promise<Message[]> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          let result: Message[];
+          if (channel) {
+            result = this.db.prepare(
+              'SELECT * FROM messages WHERE channel = ? ORDER BY timestamp DESC LIMIT ?'
+            ).all(channel, limit) as Message[];
+          } else {
+            result = this.db.prepare(
+              'SELECT * FROM messages ORDER BY timestamp DESC LIMIT ?'
+            ).all(limit) as Message[];
+          }
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getConversationHistory(sessionId: string, limit = 50): Message[] {
-    return this.db.prepare(
-      'SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC LIMIT ?'
-    ).all(sessionId, limit) as Message[];
+  // Async wrapper for getting conversation history
+  async getConversationHistory(sessionId: string, limit = 50): Promise<Message[]> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          const result = this.db.prepare(
+            'SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC LIMIT ?'
+          ).all(sessionId, limit) as Message[];
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  setPreference(key: string, value: string): void {
-    this.db.prepare(
-      'INSERT OR REPLACE INTO preferences (key, value, updated_at) VALUES (?, ?, ?)'
-    ).run(key, value, Date.now());
+  // Async wrapper for setting preference
+  async setPreference(key: string, value: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          this.db.prepare(
+            'INSERT OR REPLACE INTO preferences (key, value, updated_at) VALUES (?, ?, ?)'
+          ).run(key, value, Date.now());
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getPreference(key: string): string | undefined {
-    const row = this.db.prepare('SELECT value FROM preferences WHERE key = ?').get(key) as { value: string } | undefined;
-    return row?.value;
+  // Async wrapper for getting preference
+  async getPreference(key: string): Promise<string | undefined> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          const row = this.db.prepare('SELECT value FROM preferences WHERE key = ?').get(key) as { value: string } | undefined;
+          resolve(row?.value);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getAllPreferences(): Preference[] {
-    return this.db.prepare('SELECT * FROM preferences').all() as Preference[];
+  // Async wrapper for getting all preferences
+  async getAllPreferences(): Promise<Preference[]> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          const result = this.db.prepare('SELECT * FROM preferences').all() as Preference[];
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  saveSkill(name: string, description: string, code: string): void {
-    this.db.prepare(
-      'INSERT OR REPLACE INTO skills (name, description, code, created_at) VALUES (?, ?, ?, ?)'
-    ).run(name, description, code, Date.now());
+  // Async wrapper for saving skill
+  async saveSkill(name: string, description: string, code: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          this.db.prepare(
+            'INSERT OR REPLACE INTO skills (name, description, code, created_at) VALUES (?, ?, ?, ?)'
+          ).run(name, description, code, Date.now());
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getSkill(name: string): { name: string; description: string; code: string } | undefined {
-    return this.db.prepare('SELECT * FROM skills WHERE name = ?').get(name) as { name: string; description: string; code: string } | undefined;
+  // Async wrapper for getting skill
+  async getSkill(name: string): Promise<{ name: string; description: string; code: string } | undefined> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          const result = this.db.prepare('SELECT * FROM skills WHERE name = ?').get(name) as { name: string; description: string; code: string } | undefined;
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getAllSkills(): Array<{ name: string; description: string; code: string }> {
-    return this.db.prepare('SELECT * FROM skills').all() as Array<{ name: string; description: string; code: string }>;
+  // Async wrapper for getting all skills
+  async getAllSkills(): Promise<Array<{ name: string; description: string; code: string }>> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          const result = this.db.prepare('SELECT * FROM skills').all() as Array<{ name: string; description: string; code: string }>;
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  deleteSkill(name: string): void {
-    this.db.prepare('DELETE FROM skills WHERE name = ?').run(name);
+  // Async wrapper for deleting skill
+  async deleteSkill(name: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          this.db.prepare('DELETE FROM skills WHERE name = ?').run(name);
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  addScheduledTask(id: string, name: string, cron: string, action: string): void {
-    this.db.prepare(
-      'INSERT OR REPLACE INTO scheduled_tasks (id, name, cron, action, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)'
-    ).run(id, name, cron, action, Date.now());
+  // Async wrapper for adding scheduled task
+  async addScheduledTask(id: string, name: string, cron: string, action: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          this.db.prepare(
+            'INSERT OR REPLACE INTO scheduled_tasks (id, name, cron, action, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)'
+          ).run(id, name, cron, action, Date.now());
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
-  getScheduledTasks(): Array<{ id: string; name: string; cron: string; action: string; enabled: number }> {
-    return this.db.prepare('SELECT * FROM scheduled_tasks WHERE enabled = 1').all() as Array<{ id: string; name: string; cron: string; action: string; enabled: number }>;
+  // Async wrapper for getting scheduled tasks
+  async getScheduledTasks(): Promise<Array<{ id: string; name: string; cron: string; action: string; enabled: number }>> {
+    return new Promise((resolve, reject) => {
+      setImmediate(() => {
+        try {
+          const result = this.db.prepare('SELECT * FROM scheduled_tasks WHERE enabled = 1').all() as Array<{ id: string; name: string; cron: string; action: string; enabled: number }>;
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
   close(): void {

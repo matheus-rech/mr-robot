@@ -13,11 +13,14 @@ export class SkillsManager {
 
   constructor(memory: Memory) {
     this.memory = memory;
-    this.loadPersistedSkills();
+    // Load skills asynchronously - they'll be available shortly after construction
+    this.loadPersistedSkills().catch(err => {
+      console.error('Failed to load persisted skills:', err);
+    });
   }
 
-  private loadPersistedSkills(): void {
-    const skills = this.memory.getAllSkills();
+  private async loadPersistedSkills(): Promise<void> {
+    const skills = await this.memory.getAllSkills();
     for (const skill of skills) {
       this.compileAndRegister(skill.name, skill.description, skill.code);
     }
@@ -91,10 +94,10 @@ export class SkillsManager {
     }
   }
 
-  createSkill(name: string, description: string, code: string): boolean {
+  async createSkill(name: string, description: string, code: string): Promise<boolean> {
     const ok = this.compileAndRegister(name, description, code);
     if (ok) {
-      this.memory.saveSkill(name, description, code);
+      await this.memory.saveSkill(name, description, code);
     }
     return ok;
   }
@@ -107,8 +110,8 @@ export class SkillsManager {
     return Array.from(this.loadedSkills.values());
   }
 
-  deleteSkill(name: string): void {
+  async deleteSkill(name: string): Promise<void> {
     this.loadedSkills.delete(name);
-    this.memory.deleteSkill(name);
+    await this.memory.deleteSkill(name);
   }
 }
