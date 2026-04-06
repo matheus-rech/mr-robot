@@ -1,5 +1,6 @@
 import { Memory } from './memory';
 import chalk from 'chalk';
+import vm from 'vm';
 
 export interface Skill {
   name: string;
@@ -27,17 +28,20 @@ export class SkillsManager {
   }
 
   private validateSkillCode(code: string): { valid: boolean; reason?: string } {
-    // Basic validation to prevent dangerous operations
+    // Enhanced validation with word boundaries to prevent bypasses
     const dangerousPatterns = [
-      { pattern: /require\s*\(/i, reason: 'require() is not allowed' },
-      { pattern: /import\s+/i, reason: 'import statements are not allowed' },
-      { pattern: /process\./i, reason: 'process access is not allowed' },
+      { pattern: /\brequire\s*\(/i, reason: 'require() is not allowed' },
+      { pattern: /\bimport\s+/i, reason: 'import statements are not allowed' },
+      { pattern: /\bprocess\b/i, reason: 'process access is not allowed' },
       { pattern: /child_process/i, reason: 'child_process access is not allowed' },
-      { pattern: /fs\./i, reason: 'filesystem access is not allowed' },
-      { pattern: /eval\s*\(/i, reason: 'eval() is not allowed' },
-      { pattern: /Function\s*\(/i, reason: 'Function constructor is not allowed' },
+      { pattern: /\bfs\b/i, reason: 'filesystem access is not allowed' },
+      { pattern: /\beval\s*\(/i, reason: 'eval() is not allowed' },
+      { pattern: /\bFunction\s*\(/i, reason: 'Function constructor is not allowed' },
       { pattern: /\.constructor\s*\(/i, reason: 'constructor access is not allowed' },
-      { pattern: /__dirname|__filename/i, reason: 'directory access is not allowed' },
+      { pattern: /\b__dirname\b|\b__filename\b/i, reason: 'directory access is not allowed' },
+      { pattern: /\bglobal\b/i, reason: 'global object access is not allowed' },
+      { pattern: /\bmodule\b/i, reason: 'module access is not allowed' },
+      { pattern: /\bexports\b/i, reason: 'exports access is not allowed' },
     ];
 
     for (const { pattern, reason } of dangerousPatterns) {
@@ -63,12 +67,35 @@ export class SkillsManager {
     }
 
     try {
-      const fn = new Function('args', `
-        const result = (async (args) => {
+      // Create a sandboxed context with vm module for safer execution
+      const sandbox = {
+        console: {
+          log: (...args: any[]) => console.log(`[Skill:${name}]`, ...args),
+          error: (...args: any[]) => console.error(`[Skill:${name}]`, ...args),
+        },
+        // Only expose safe APIs
+        setTimeout,
+        setInterval,
+        clearTimeout,
+        clearInterval,
+        Promise,
+        JSON,
+        Math,
+        Date,
+        String,
+        Number,
+        Boolean,
+        Array,
+        Object,
+      };
+
+      // Compile the skill in the sandbox
+      const script = new vm.Script(`
+        (async (args) => {
           ${code}
         })(args);
-        return result;
       `);
+
       this.loadedSkills.set(name, {
         name,
         description,
@@ -79,7 +106,11 @@ export class SkillsManager {
             const timeoutPromise = new Promise<string>((_, reject) => {
               setTimeout(() => reject(new Error('Skill execution timeout')), timeoutMs);
             });
-            const executionPromise = fn(args);
+
+            // Execute in sandboxed context
+            const context = vm.createContext({ ...sandbox, args });
+            const executionPromise = script.runInContext(context, { timeout: timeoutMs });
+
             const result = await Promise.race([executionPromise, timeoutPromise]);
             return String(result);
           } catch (err: any) {
