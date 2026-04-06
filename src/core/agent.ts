@@ -44,6 +44,10 @@ export class Agent {
     console.log(chalk.green(`✅ ${this.agentName} initialized (LLM: ${provider})`));
   }
 
+  listSkills() {
+    return this.skillsManager?.listSkills() ?? [];
+  }
+
   registerChannel(channel: BaseChannel): void {
     this.channels.push(channel);
   }

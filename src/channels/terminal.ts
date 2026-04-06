@@ -54,7 +54,7 @@ export class TerminalChannel implements BaseChannel {
         }
 
         if (message === '/skills') {
-          const skills = (this.agent as any).skillsManager?.listSkills() || [];
+          const skills = this.agent.listSkills();
           if (skills.length === 0) {
             console.log(chalk.gray('\nNo skills saved yet.\n'));
           } else {
@@ -69,7 +69,7 @@ export class TerminalChannel implements BaseChannel {
         }
 
         if (message === '/prefs') {
-          const prefs = (this.agent as any).memory?.getAllPreferences() || [];
+          const prefs = this.agent.memory.getAllPreferences();
           if (prefs.length === 0) {
             console.log(chalk.gray('\nNo preferences saved yet.\n'));
           } else {

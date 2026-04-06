@@ -25,7 +25,7 @@ export class Scheduler {
       });
     }
 
-    const memory = (this.agent as any).memory;
+    const memory = this.agent.memory;
     if (memory) {
       const tasks = memory.getScheduledTasks();
       for (const task of tasks) {
