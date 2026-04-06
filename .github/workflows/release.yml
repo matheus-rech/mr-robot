@@ -20,7 +20,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -48,12 +48,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
     - name: Set up Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '20.x'
         cache: 'npm'
@@ -117,7 +117,7 @@ jobs:
         - HTTP health check endpoint
 
         ### System Requirements
-        - Node.js 18.x or higher
+        - Node.js 20.x or higher
         - Linux, macOS, or Windows
         - ARM64 support (Raspberry Pi compatible)
 
@@ -128,7 +128,7 @@ jobs:
         sed "s/\${VERSION}/${VERSION}/g" release_notes.md > final_notes.md
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         body_path: final_notes.md
         files: |
@@ -145,7 +145,7 @@ jobs:
     needs: build-and-release
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -174,7 +174,7 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         platforms: linux/amd64,linux/arm64

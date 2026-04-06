@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Personal AI assistant that connects to all your messaging apps",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "mr-robot": "dist/index.js",
     "mr-robot-setup": "dist/wizard.js"
