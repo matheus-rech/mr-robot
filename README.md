@@ -397,7 +397,7 @@ npm start
 **WhatsApp QR code not appearing:**
 - Delete `.wwebjs_auth` directory and restart
 - Ensure no other WhatsApp Web sessions are active
-- Check firewall isn't blocking WebSocket connections
+- Check the firewall isn't blocking WebSocket connections
 
 ### LLM Provider Issues
 
