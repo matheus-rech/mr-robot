@@ -1,0 +1,30 @@
+[Unit]
+Description=Mr. Robot - Personal AI Assistant
+Documentation=https://github.com/matheus-rech/mr-robot
+After=network.target
+
+[Service]
+Type=simple
+User=mrrobot
+WorkingDirectory=/opt/mr-robot
+Environment="NODE_ENV=production"
+EnvironmentFile=/opt/mr-robot/.env
+ExecStart=/usr/bin/node /opt/mr-robot/dist/index.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mr-robot
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/mr-robot/data /opt/mr-robot/baileys_auth_info
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

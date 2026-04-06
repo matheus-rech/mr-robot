@@ -1,0 +1,28 @@
+# Docker-specific ignores
+node_modules/
+dist/
+.env
+*.db
+*.db-shm
+*.db-wal
+baileys_auth_info/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github/
+
+# Temp files
+tmp/
+temp/
