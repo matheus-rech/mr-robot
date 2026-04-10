@@ -11,6 +11,7 @@ import { WhatsAppChannel } from './channels/whatsapp';
 import { Scheduler } from './core/scheduler';
 import { HealthServer } from './core/health';
 import { MCPServer } from './core/mcp-server';
+import { APIServer } from './core/api-server';
 
 async function main() {
   console.log(chalk.cyan(figlet.textSync('Mr. Robot', { horizontalLayout: 'full' })));
@@ -42,6 +43,16 @@ async function main() {
   if (mcpEnabled) {
     mcpServer = new MCPServer(agent, mcpPort, mcpAuthToken);
     mcpServer.start();
+  }
+
+  // Start API server if enabled
+  const apiEnabled = process.env.API_SERVER_ENABLED === 'true';
+  const apiPort = parseInt(process.env.API_SERVER_PORT || '3002', 10);
+  let apiServer: APIServer | null = null;
+
+  if (apiEnabled) {
+    apiServer = new APIServer(agent, apiPort);
+    apiServer.start();
   }
 
   const enabledChannels = (process.env.ENABLED_CHANNELS || 'terminal').split(',').map(s => s.trim());
@@ -83,6 +94,9 @@ async function main() {
     if (mcpServer) {
       mcpServer.stop();
     }
+    if (apiServer) {
+      apiServer.stop();
+    }
     process.exit(0);
   });
 
@@ -93,6 +107,9 @@ async function main() {
     }
     if (mcpServer) {
       mcpServer.stop();
+    }
+    if (apiServer) {
+      apiServer.stop();
     }
     process.exit(0);
   });
