@@ -172,6 +172,103 @@ export class Memory {
     });
   }
 
+  // Export conversation history to JSON
+  async exportConversation(sessionId?: string): Promise<string> {
+    return this.runAsync(() => {
+      const messages = sessionId
+        ? this.db.prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC').all(sessionId)
+        : this.db.prepare('SELECT * FROM messages ORDER BY timestamp ASC').all();
+
+      const preferences = this.db.prepare('SELECT * FROM preferences').all();
+      const skills = this.db.prepare('SELECT * FROM skills').all();
+
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        sessionId,
+        messages,
+        preferences,
+        skills,
+      };
+
+      return JSON.stringify(exportData, null, 2);
+    });
+  }
+
+  // Import conversation history from JSON
+  async importConversation(jsonData: string, mergeMode: boolean = false): Promise<{ imported: number; errors: string[] }> {
+    return this.runAsync(() => {
+      const errors: string[] = [];
+      let imported = 0;
+
+      try {
+        const data = JSON.parse(jsonData);
+
+        if (!data.version || data.version !== '1.0') {
+          errors.push('Unsupported export version');
+          return { imported, errors };
+        }
+
+        // If not merge mode, clear existing data
+        if (!mergeMode) {
+          this.db.prepare('DELETE FROM messages').run();
+          this.db.prepare('DELETE FROM preferences').run();
+          this.db.prepare('DELETE FROM skills').run();
+        }
+
+        // Import messages
+        if (Array.isArray(data.messages)) {
+          const insertMsg = this.db.prepare(
+            'INSERT OR IGNORE INTO messages (role, content, channel, timestamp, session_id) VALUES (?, ?, ?, ?, ?)'
+          );
+          for (const msg of data.messages) {
+            try {
+              insertMsg.run(msg.role, msg.content, msg.channel, msg.timestamp, msg.session_id);
+              imported++;
+            } catch (err: any) {
+              errors.push(`Failed to import message: ${err.message}`);
+            }
+          }
+        }
+
+        // Import preferences
+        if (Array.isArray(data.preferences)) {
+          const insertPref = this.db.prepare(
+            'INSERT OR REPLACE INTO preferences (key, value, updated_at) VALUES (?, ?, ?)'
+          );
+          for (const pref of data.preferences) {
+            try {
+              insertPref.run(pref.key, pref.value, pref.updated_at || Date.now());
+              imported++;
+            } catch (err: any) {
+              errors.push(`Failed to import preference: ${err.message}`);
+            }
+          }
+        }
+
+        // Import skills
+        if (Array.isArray(data.skills)) {
+          const insertSkill = this.db.prepare(
+            'INSERT OR REPLACE INTO skills (name, description, code, created_at) VALUES (?, ?, ?, ?)'
+          );
+          for (const skill of data.skills) {
+            try {
+              insertSkill.run(skill.name, skill.description, skill.code, skill.created_at || Date.now());
+              imported++;
+            } catch (err: any) {
+              errors.push(`Failed to import skill: ${err.message}`);
+            }
+          }
+        }
+
+        return { imported, errors };
+      } catch (err: any) {
+        errors.push(`Import failed: ${err.message}`);
+        return { imported, errors };
+      }
+    });
+  }
+
   close(): void {
     this.db.close();
   }

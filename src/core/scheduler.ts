@@ -5,6 +5,7 @@ import chalk from 'chalk';
 export class Scheduler {
   private agent: Agent;
   private tasks: Map<string, ReturnType<typeof cron.schedule>> = new Map();
+  private loadedTaskIds: Set<string> = new Set();
 
   constructor(agent: Agent) {
     this.agent = agent;
@@ -30,15 +31,40 @@ export class Scheduler {
       });
     }
 
+    await this.reloadTasks();
+    console.log(chalk.gray(`[Scheduler] Initialized with ${this.tasks.size} task(s)`));
+  }
+
+  /**
+   * Reload tasks from database and start any new ones.
+   * This allows hot-reloading of scheduled tasks without restart.
+   */
+  async reloadTasks(): Promise<void> {
     const memory = this.agent.memory;
-    if (memory) {
-      let tasks: Array<{ id: string; name: string; cron: string; action: string; enabled: number }> = [];
-      try {
-        tasks = await memory.getScheduledTasks();
-      } catch (err: any) {
-        console.error(chalk.red('[Scheduler] Failed to load persisted tasks, continuing without them:'), err.message);
+    if (!memory) return;
+
+    let tasks: Array<{ id: string; name: string; cron: string; action: string; enabled: number }> = [];
+    try {
+      tasks = await memory.getScheduledTasks();
+    } catch (err: any) {
+      console.error(chalk.red('[Scheduler] Failed to load persisted tasks:'), err.message);
+      return;
+    }
+
+    const currentTaskIds = new Set(tasks.map(t => t.id));
+
+    // Stop tasks that were removed from DB
+    for (const loadedId of this.loadedTaskIds) {
+      if (!currentTaskIds.has(loadedId) && loadedId !== 'daily-summary') {
+        this.stop(loadedId);
+        this.loadedTaskIds.delete(loadedId);
+        console.log(chalk.yellow(`[Scheduler] Stopped removed task: ${loadedId}`));
       }
-      for (const task of tasks) {
+    }
+
+    // Start new or updated tasks
+    for (const task of tasks) {
+      if (!this.loadedTaskIds.has(task.id)) {
         this.schedule(task.id, task.cron, async () => {
           try {
             const result = await this.agent.chat(task.action, 'scheduler', 'system-session');
@@ -48,10 +74,10 @@ export class Scheduler {
             console.error(err.stack);
           }
         });
+        this.loadedTaskIds.add(task.id);
+        console.log(chalk.green(`[Scheduler] Started new task: ${task.name}`));
       }
     }
-
-    console.log(chalk.gray(`[Scheduler] Initialized with ${this.tasks.size} task(s)`));
   }
 
   schedule(id: string, cronExp: string, fn: () => Promise<void>): void {
