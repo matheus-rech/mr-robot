@@ -219,12 +219,36 @@ export class Memory {
         // Import messages
         if (Array.isArray(data.messages)) {
           const insertMsg = this.db.prepare(
-            'INSERT OR IGNORE INTO messages (role, content, channel, timestamp, session_id) VALUES (?, ?, ?, ?, ?)'
+            `INSERT INTO messages (role, content, channel, timestamp, session_id)
+             SELECT ?, ?, ?, ?, ?
+             WHERE NOT EXISTS (
+               SELECT 1
+               FROM messages
+               WHERE role = ?
+                 AND content = ?
+                 AND channel = ?
+                 AND timestamp = ?
+                 AND session_id = ?
+             )`
           );
           for (const msg of data.messages) {
             try {
-              insertMsg.run(msg.role, msg.content, msg.channel, msg.timestamp, msg.session_id);
-              imported++;
+              const sessionId = msg.session_id ?? msg.sessionId;
+              const result = insertMsg.run(
+                msg.role,
+                msg.content,
+                msg.channel,
+                msg.timestamp,
+                sessionId,
+                msg.role,
+                msg.content,
+                msg.channel,
+                msg.timestamp,
+                sessionId
+              );
+              if (result.changes > 0) {
+                imported++;
+              }
             } catch (err: any) {
               errors.push(`Failed to import message: ${err.message}`);
             }
