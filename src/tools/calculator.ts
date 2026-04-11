@@ -11,8 +11,9 @@ export class CalculatorTool implements Tool {
 
   async execute(args: string): Promise<string> {
     try {
-      // Remove any dangerous patterns
-      const dangerous = /[a-zA-Z_$][\w$]*\s*\(|require|import|process|eval|Function|constructor|__proto__|prototype/i;
+      // Block only genuinely dangerous tokens and prototype/constructor escape paths.
+      // Allow intended mathematical calls such as sqrt(16), pow(2, 8), and Math.floor(4.7).
+      const dangerous = /(?:^|[^\w$])(require|import|process|eval|Function|constructor|__proto__|prototype|globalThis|global|module)(?:[^\w$]|$)/i;
       if (dangerous.test(args)) {
         return 'Error: Expression contains forbidden patterns';
       }
