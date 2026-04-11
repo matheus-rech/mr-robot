@@ -6,6 +6,8 @@ export class Scheduler {
   private agent: Agent;
   private tasks: Map<string, ReturnType<typeof cron.schedule>> = new Map();
   private loadedTaskIds: Set<string> = new Set();
+  /** Tracks cron/action fingerprint per task id to detect updates. */
+  private taskMeta: Map<string, { cron: string; action: string }> = new Map();
 
   constructor(agent: Agent) {
     this.agent = agent;
@@ -36,8 +38,9 @@ export class Scheduler {
   }
 
   /**
-   * Reload tasks from database and start any new ones.
-   * This allows hot-reloading of scheduled tasks without restart.
+   * Reload tasks from database and start any new or updated ones.
+   * Stops tasks that have been removed or whose cron/action changed,
+   * then (re)starts them so changes take effect without a restart.
    */
   async reloadTasks(): Promise<void> {
     const memory = this.agent.memory;
@@ -62,8 +65,18 @@ export class Scheduler {
       }
     }
 
-    // Start new or updated tasks
+    // Start new tasks or reschedule updated ones
     for (const task of tasks) {
+      const existing = this.taskMeta.get(task.id);
+      const hasChanged = existing && (existing.cron !== task.cron || existing.action !== task.action);
+
+      if (hasChanged) {
+        // Stop the old instance before rescheduling
+        this.stop(task.id);
+        this.loadedTaskIds.delete(task.id);
+        console.log(chalk.yellow(`[Scheduler] Rescheduling updated task: ${task.name}`));
+      }
+
       if (!this.loadedTaskIds.has(task.id)) {
         this.schedule(task.id, task.cron, async () => {
           try {
@@ -75,7 +88,8 @@ export class Scheduler {
           }
         });
         this.loadedTaskIds.add(task.id);
-        console.log(chalk.green(`[Scheduler] Started new task: ${task.name}`));
+        this.taskMeta.set(task.id, { cron: task.cron, action: task.action });
+        console.log(chalk.green(`[Scheduler] Started task: ${task.name}`));
       }
     }
   }
@@ -94,6 +108,7 @@ export class Scheduler {
     if (task) {
       task.stop();
       this.tasks.delete(id);
+      this.taskMeta.delete(id);
     }
   }
 }

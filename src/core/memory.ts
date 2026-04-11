@@ -222,29 +222,17 @@ export class Memory {
             `INSERT INTO messages (role, content, channel, timestamp, session_id)
              SELECT ?, ?, ?, ?, ?
              WHERE NOT EXISTS (
-               SELECT 1
-               FROM messages
-               WHERE role = ?
-                 AND content = ?
-                 AND channel = ?
-                 AND timestamp = ?
-                 AND session_id = ?
+               SELECT 1 FROM messages
+               WHERE role = ? AND content = ? AND channel = ? AND timestamp = ? AND session_id = ?
              )`
           );
           for (const msg of data.messages) {
             try {
+              // Support both snake_case (DB export) and camelCase (legacy exports)
               const sessionId = msg.session_id ?? msg.sessionId;
               const result = insertMsg.run(
-                msg.role,
-                msg.content,
-                msg.channel,
-                msg.timestamp,
-                sessionId,
-                msg.role,
-                msg.content,
-                msg.channel,
-                msg.timestamp,
-                sessionId
+                msg.role, msg.content, msg.channel, msg.timestamp, sessionId,
+                msg.role, msg.content, msg.channel, msg.timestamp, sessionId
               );
               if (result.changes > 0) {
                 imported++;
