@@ -300,8 +300,8 @@
 
                 container.innerHTML = data.skills.map(skill => `
                     <div class="list-item">
-                        <div class="skill-name">${skill.name}</div>
-                        <div class="skill-desc">${skill.description}</div>
+                        <div class="skill-name">${escapeHtml(skill.name)}</div>
+                        <div class="skill-desc">${escapeHtml(skill.description)}</div>
                     </div>
                 `).join('');
             } catch (error) {
