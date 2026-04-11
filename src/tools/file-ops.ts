@@ -61,7 +61,7 @@ export class FileOpsTool implements Tool {
       const resolved = path.resolve(this.workspaceDir, filePath);
 
       // Check if resolved path is within workspace
-      if (!resolved.startsWith(this.workspaceDir)) {
+      if (!resolved.startsWith(this.workspaceDir + path.sep) && resolved !== this.workspaceDir) {
         return null;
       }
 
