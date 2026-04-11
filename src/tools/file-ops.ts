@@ -35,7 +35,7 @@ export class FileOpsTool implements Tool {
           return await this.readFile(safePath);
 
         case 'write':
-          if (!content) {
+          if (content === undefined) {
             return 'Error: Content is required for write operation';
           }
           return await this.writeFile(safePath, content);
