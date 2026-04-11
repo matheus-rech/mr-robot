@@ -54,9 +54,20 @@ export class APIServer {
       try {
         const sessionIdParam = req.params.sessionId;
         const sessionId = Array.isArray(sessionIdParam) ? sessionIdParam[0] : sessionIdParam;
+        const DEFAULT_CONVERSATION_LIMIT = 50;
+        const MAX_CONVERSATION_LIMIT = 200;
         const limitQuery = req.query.limit;
-        const limitStr = typeof limitQuery === 'string' ? limitQuery : '50';
-        const limit = parseInt(limitStr);
+        const limitStr = typeof limitQuery === 'string'
+          ? limitQuery
+          : Array.isArray(limitQuery)
+            ? limitQuery[0]
+            : undefined;
+        const parsedLimit = limitStr !== undefined
+          ? parseInt(limitStr, 10)
+          : DEFAULT_CONVERSATION_LIMIT;
+        const limit = Number.isFinite(parsedLimit) && parsedLimit > 0
+          ? Math.min(parsedLimit, MAX_CONVERSATION_LIMIT)
+          : DEFAULT_CONVERSATION_LIMIT;
         const messages = await this.agent.memory.getConversationHistory(sessionId, limit);
         res.json({ messages });
       } catch (error: any) {
