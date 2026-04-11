@@ -1,6 +1,7 @@
 import readline from 'readline';
 import chalk from 'chalk';
 import ora from 'ora';
+import * as fs from 'fs/promises';
 import { Agent } from '../core/agent';
 import { BaseChannel } from './base';
 import { v4 as uuidv4 } from 'uuid';
@@ -48,6 +49,8 @@ export class TerminalChannel implements BaseChannel {
           console.log(chalk.gray('  /skills      — list all skills'));
           console.log(chalk.gray('  /prefs       — show preferences'));
           console.log(chalk.gray('  /clear       — start new session'));
+          console.log(chalk.gray('  /export [file] — export conversation to JSON file'));
+          console.log(chalk.gray('  /import <file> — import conversation from JSON file'));
           console.log();
           prompt();
           return;
@@ -86,6 +89,43 @@ export class TerminalChannel implements BaseChannel {
         if (message === '/clear') {
           this.sessionId = uuidv4();
           console.log(chalk.gray('\nNew session started.\n'));
+          prompt();
+          return;
+        }
+
+        if (message.startsWith('/export')) {
+          const parts = message.split(' ');
+          const filename = parts[1] || `mr-robot-export-${Date.now()}.json`;
+          try {
+            const exportData = await this.agent.memory.exportConversation();
+            await fs.writeFile(filename, exportData, 'utf-8');
+            console.log(chalk.green(`\nConversation exported to: ${filename}\n`));
+          } catch (err: any) {
+            console.log(chalk.red(`\nExport failed: ${err.message}\n`));
+          }
+          prompt();
+          return;
+        }
+
+        if (message.startsWith('/import')) {
+          const parts = message.split(' ');
+          const filename = parts[1];
+          if (!filename) {
+            console.log(chalk.red('\nPlease specify a file to import: /import <filename>\n'));
+            prompt();
+            return;
+          }
+          try {
+            const importData = await fs.readFile(filename, 'utf-8');
+            const result = await this.agent.memory.importConversation(importData, true);
+            console.log(chalk.green(`\nImported ${result.imported} items successfully`));
+            if (result.errors.length > 0) {
+              console.log(chalk.yellow(`Errors: ${result.errors.join(', ')}`));
+            }
+            console.log();
+          } catch (err: any) {
+            console.log(chalk.red(`\nImport failed: ${err.message}\n`));
+          }
           prompt();
           return;
         }

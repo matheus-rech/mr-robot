@@ -3,9 +3,12 @@ import { SkillsManager } from './skills';
 import { LLMProvider } from '../llm/base';
 import { OpenAIProvider } from '../llm/openai';
 import { OpenRouterProvider } from '../llm/openrouter';
+import { AnthropicProvider } from '../llm/anthropic';
 import { Tool } from '../tools/base';
 import { WebSearchTool } from '../tools/web-search';
 import { WebFetchTool } from '../tools/web-fetch';
+import { CalculatorTool } from '../tools/calculator';
+import { FileOpsTool } from '../tools/file-ops';
 import { BaseChannel } from '../channels/base';
 import chalk from 'chalk';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +20,7 @@ export class Agent {
   private tools: Map<string, Tool> = new Map();
   private channels: BaseChannel[] = [];
   private agentName: string;
+  private scheduler: any = null; // Reference to scheduler for hot-reload
 
   constructor() {
     this.memory = new Memory();
@@ -27,6 +31,8 @@ export class Agent {
     const provider = process.env.LLM_PROVIDER || 'openai';
     if (provider === 'openrouter') {
       this.llm = new OpenRouterProvider();
+    } else if (provider === 'anthropic') {
+      this.llm = new AnthropicProvider();
     } else {
       this.llm = new OpenAIProvider();
     }
@@ -37,6 +43,8 @@ export class Agent {
     const tools: Tool[] = [
       new WebSearchTool(),
       new WebFetchTool(),
+      new CalculatorTool(),
+      new FileOpsTool(),
     ];
     for (const tool of tools) {
       this.tools.set(tool.name, tool);
@@ -51,6 +59,10 @@ export class Agent {
 
   registerChannel(channel: BaseChannel): void {
     this.channels.push(channel);
+  }
+
+  setScheduler(scheduler: any): void {
+    this.scheduler = scheduler;
   }
 
   async broadcast(message: string): Promise<void> {
@@ -114,6 +126,8 @@ export class Agent {
 You have access to these tools (call them using the format TOOL:<name>:<args>):
 - TOOL:web_search:<query> — search the web
 - TOOL:web_fetch:<url> — fetch and read a web page
+- TOOL:calculator:<expression> — perform safe mathematical calculations (e.g., "2 + 2 * 5", "sqrt(16)", "pow(2, 8)")
+- TOOL:file_ops:<json> — file operations in workspace, JSON format: {"operation":"read|write|list|delete","filePath":"...","content":"..."(for write)}
 - TOOL:create_skill:<json> — create a new skill, JSON format: {"name":"...","description":"...","code":"..."}
 - TOOL:run_skill:<name>:<args> — run a saved skill
 - TOOL:list_skills — list all available skills
@@ -155,6 +169,12 @@ When the user shows you a complex task, offer to create a skill for it so you ca
         } else if (toolName === 'web_fetch') {
           const tool = this.tools.get('web_fetch');
           if (tool) toolResult = await tool.execute(toolArgs);
+        } else if (toolName === 'calculator') {
+          const tool = this.tools.get('calculator');
+          if (tool) toolResult = await tool.execute(toolArgs);
+        } else if (toolName === 'file_ops') {
+          const tool = this.tools.get('file_ops');
+          if (tool) toolResult = await tool.execute(toolArgs);
         } else if (toolName === 'create_skill') {
           const skillData = JSON.parse(toolArgs);
           const ok = await this.skillsManager.createSkill(skillData.name, skillData.description, skillData.code);
@@ -177,7 +197,11 @@ When the user shows you a complex task, offer to create a skill for it so you ca
           const schedData = JSON.parse(toolArgs);
           const id = uuidv4();
           await this.memory.addScheduledTask(id, schedData.name, schedData.cron, schedData.action);
-          toolResult = `Scheduled task "${schedData.name}" created.`;
+          // Hot-reload scheduler to pick up the new task immediately
+          if (this.scheduler && typeof this.scheduler.reloadTasks === 'function') {
+            await this.scheduler.reloadTasks();
+          }
+          toolResult = `Scheduled task "${schedData.name}" created and activated.`;
         }
       } catch (err: any) {
         toolResult = `Tool error: ${err.message}`;
